@@ -1,4 +1,9 @@
-from collections import Counter
+from collections import (
+    Counter,
+    deque,
+    Hashable
+)
+import functools
 import math
 
 import multiprocessing as mp
@@ -30,9 +35,13 @@ def run_cpu_tasks_in_parallel(tasks):
 
 def is_palindrome_number(n):
     str_n = str(n)
-    len_n = len(str_n)
-    for i in range(len_n // 2):
-        if str_n[i] != str_n[len_n - i - 1]:
+    return is_palindrome(str_n)
+
+
+def is_palindrome(string):
+    len_str = len(string)
+    for i in range(len_str // 2):
+        if string[i] != string[len_str - i - 1]:
             return False
     return True
 
@@ -102,16 +111,6 @@ def from_list_to_num(lista):
         total += digit
         total *= 10
     return total // 10
-
-def is_prime(n):
-    if n <= 1:
-        return False
-    if n % 2 == 0:
-        return False
-    for i in range(3, int(math.ceil(math.sqrt(n))) + 1, 2):
-        if n % i == 0:
-            return False
-    return True
 
 
 def is_prime_2(n, primes_so_far):
@@ -228,12 +227,14 @@ def get_digits_dict(number):
             result[digit] = result[digit] + 1
     return result
 
+
 def check_if_all_digits_are_the_same(number):
     digits_dict = get_digits_dict(number)
     for i in range(2, 7):
         if get_digits_dict(number * i) != digits_dict:
             return False
     return True
+
 
 def _get_divisors(num):
     factors = list()
@@ -252,6 +253,63 @@ def get_highest_common_factor(a, b):
         if factor in factors_b:
             return factor    
 
+
 def get_lowest_common_term(num, den):
     factor = get_highest_common_factor(num, den)
     return (num / factor, den / factor)
+
+
+def generate_rotation_nums(digits):
+    """
+    Receives a list of digits and genertate all possible ROTATIONS of the number,
+    for ex for number 179, the rotations are: 179, 791 and 917
+    """
+    rotations = len(digits)
+    combinations = list()
+    for _ in range(rotations):
+        digits.append(digits.pop(0))
+        combinations.append(from_list_to_num(digits))
+    
+    return combinations
+
+
+class memoized(object):
+    '''
+    Decorator. Caches a function's return value each time it is called.
+    If called later with the same arguments, the cached value is returned
+    (not reevaluated).
+    '''
+    def __init__(self, func):
+        self.func = func
+        self.cache = {}
+    def __call__(self, *args):
+        if not isinstance(args, Hashable):
+            # uncacheable. a list, for instance.
+            # better to not cache than blow up.
+            return self.func(*args)
+        if args in self.cache:
+            return self.cache[args]
+        else:
+            value = self.func(*args)
+            self.cache[args] = value
+            return value
+    def __repr__(self):
+        '''Return the function's docstring.'''
+        return self.func.__doc__
+    def __get__(self, obj, objtype):
+        '''Support instance methods.'''
+        return functools.partial(self.__call__, obj)
+    
+
+@memoized
+def is_prime(n):
+    if n <= 1:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(math.ceil(math.sqrt(n))) + 1, 2):
+        if n % i == 0:
+            return False
+    return True

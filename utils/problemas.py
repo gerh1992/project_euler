@@ -17,11 +17,13 @@ from utils.utils import (
     check_all_digits,
     check_if_all_digits_are_the_same,
     find_cyclic_length,
+    generate_rotation_nums,
     get_digits,
     get_loop_range,
     get_lowest_common_term,
     get_total_factors,
-    from_list_to_num,
+    is_palindrome,
+    is_palindrome_number,
     is_prime,
     is_prime_2,
     lowest_common_multiple,
@@ -1055,22 +1057,167 @@ def problema_35():
 
     How many circular primes are there below one million?
     """
-    circular_primes = [2]
-    for i in range(3, 1000001, 2):
+    UPPER_BOUND = 1000000
+    LOWER_BOUND = 3
+    circular_primes = set({2})
+
+    for i in range(LOWER_BOUND, UPPER_BOUND, 2):
+        if i in circular_primes:
+            continue
         digits = get_digits(i)
         for digit in digits:
             if digit % 2 == 0:
                 break
         prime = True
-        comb_list = list(permutations(digits, len(digits)))
+        comb_list = generate_rotation_nums(digits)
+        comb_list_num = list()
         for comb in comb_list:
-            if not is_prime(from_list_to_num(comb)):
+            comb_list_num.append(comb)
+            if not is_prime(comb):
                 prime = False
                 break
+            comb_list_num.append(comb)
         if prime:
-            circular_primes.append(i)
-    return circular_primes
+            for comb in comb_list_num:
+                circular_primes.add(comb)
+    print(circular_primes)
+    return len(circular_primes)
+
+
+def problema_36():
+    """
+    The decimal number, 585 = 1001001001 base 2 (binary), is palindromic in both bases.
+
+    Find the sum of all numbers, less than one million, which are palindromic in base 10 and base 2.
+
+    (Please note that the palindromic number, in either base, may not include leading zeros.)
+    """
+    UPPER_BOUND = 1000000
+    total = 0
+
+    for i in range(1, UPPER_BOUND):
+        is_palindrome_bin, is_palindrome_num = is_palindrome(bin(i)[2:]), is_palindrome_number(i)
+        if is_palindrome_bin and is_palindrome_num:
+            total += i
+    
+    return total
         
+
+def problema_37():
+    """
+    The number 3797 has an interesting property. Being prime itself, it is possible to continuously remove digits from left to right,
+    and remain prime at each stage: 3797, 797, 97, and 7. Similarly we can work from right to left: 3797, 379, 37, and 3.
+
+    Find the sum of the only eleven primes that are both truncatable from left to right and right to left.
+
+    NOTE: 2, 3, 5, and 7 are not considered to be truncatable primes.
+    """
+    total_primes = 11
+    found_so_far = 0
+    primes = []
+    check_number = 11
+    not_allowed_numbers = {4,6,8,0}
+
+    def form_all_possible_combinations(num, not_allowed_numbers):
+        """
+        12, 1, 2
+        123, 12, 1, 23, 3
+        [1,2,3] 1 12 123 23 3
+        1234, 123, 12, 1, 234, 34, 4
+        """
+        digits = get_digits(num)
+        digits_length = len(digits)
+        
+        for digit in digits:
+            if digit in not_allowed_numbers:
+                return False
+        
+        chunk_length = 1
+
+        while chunk_length < digits_length:
+            left, right = digits[0:chunk_length], digits[-1 -chunk_length + 1:]
+            left_total = 0
+            right_total = 0
+            for num in left:
+                left_total *= 10
+                left_total += num
+            if not is_prime(left_total):
+                return False
+                
+            for num in right:
+                right_total *= 10
+                right_total += num
+            if not is_prime(right_total):
+                return False
+            chunk_length += 1
+
+        total = 0
+        for num in digits:
+            total *= 10
+            total += num
+        
+        return is_prime(total)
+
+
+    while found_so_far < total_primes:
+        if form_all_possible_combinations(check_number, not_allowed_numbers):
+            primes.append(check_number)
+            found_so_far += 1
+            print(check_number)
+        check_number += 2
+        if check_number > 100:
+            not_allowed_numbers.add(5)
+
+    return sum(primes)
+
+
+def problema_38():
+    """
+    Take the number 192 and multiply it by each of 1, 2, and 3:
+
+    192 x 1 = 192
+    192 x 2 = 384
+    192 x 3 = 576
+    By concatenating each product we get the 1 to 9 pandigital, 192384576. We will call 192384576 the concatenated product of 192 and (1,2,3)
+
+    The same can be achieved by starting with 9 and multiplying by 1, 2, 3, 4, and 5, giving the pandigital, 
+    918273645, which is the concatenated product of 9 and (1,2,3,4,5).
+
+    What is the largest 1 to 9 pandigital 9-digit number that can be formed as the concatenated product of an integer with (1,2, ... , n) where n > 1?
+    """
+    def check_pandigital(num):
+        all_digits = {"1","2","3","4","5","6","7","8", "9"}
+        if len(num) != 9:
+            return False
+        
+        for char in num:
+            if char == "0":
+                return False
+            try:
+                all_digits.remove(char)
+            except KeyError:
+                return False
+        return True
+
+    starting_number = 9
+    to_beat = 918273645
+    best = 0
+    while best <= to_beat:
+        i = 1
+        curr = ""
+        while True:
+            if check_pandigital(curr):
+                print(f"current number: {curr}, start number: {starting_number}")
+                best = max(to_beat, best)
+            if curr and int(curr) > 1000000000:
+                break
+            curr += str(starting_number * i)
+            i += 1
+        starting_number += 1
+
+    return best
+
+
 
 def problema_52():
     """
